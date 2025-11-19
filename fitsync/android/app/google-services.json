@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "969384738690",
+    "project_id": "fitsync-57bea",
+    "storage_bucket": "fitsync-57bea.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:969384738690:android:1a3c3d5cc084c992c6d99b",
+        "android_client_info": {
+          "package_name": "com.bancoapp.fitsync"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAbcpfjY7IRAd_UU0p9NoSLdRENdOSNdcw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
