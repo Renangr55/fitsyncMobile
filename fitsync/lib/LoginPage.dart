@@ -1,5 +1,6 @@
-import 'package:fitsync/HomePage.dart';
+import 'package:fitsync/Homepage.dart';
 import 'package:flutter/material.dart';
+import 'MainNavigationBar.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -113,7 +114,8 @@ class _LoginpageState extends State<LoginPage> {
                 login();
                   Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => Homepage()),
+                    MaterialPageRoute(builder: (_) => const MainNavigation()),
+
                 );
               },style: ElevatedButton.styleFrom(
                 backgroundColor: Color.fromARGB(255, 6, 185, 87),
