@@ -1,4 +1,35 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+class NewsArticle {
+  final String title;
+  final String description;
+  final String url;
+  final String imageUrl;
+  final String publishedAt;
+  final String sourceName;
+
+  NewsArticle({
+    required this.title,
+    required this.description,
+    required this.url,
+    required this.imageUrl,
+    required this.publishedAt,
+    required this.sourceName,
+  });
+
+  factory NewsArticle.fromJson(Map<String, dynamic> json) {
+    return NewsArticle(
+      title: json['title'] ?? 'Sem título',
+      description: json['description'] ?? '',
+      url: json['url'] ?? '',
+      imageUrl: json['urlToImage'] ?? '',
+      publishedAt: json['publishedAt'] ?? '',
+      sourceName: json['source']?['name'] ?? '',
+    );
+  }
+}
 
 class ExercicioService {
   final _db = FirebaseFirestore.instance;
@@ -132,5 +163,119 @@ class ExercicioService {
       print("Erro ao deletar exercício: $e");
     }
   }
+
+
+  // Train Plan
+  Future<List<Map<String, dynamic>>> getTrainingPlans() async {
+    final snap = await _db.collection("TrainingPlan").get();
+
+    return await Future.wait(
+      snap.docs.map((doc) async {
+        final data = doc.data();
+
+        // Referências
+        final List exercisesRefs = data["Exercises"] ?? [];
+        final List musclesRefs = data["Muscles"] ?? [];
+
+        // Buscar nome dos exercícios
+        final exercisesData = await Future.wait(exercisesRefs.map((ref) async {
+          if (ref == null) return null;
+          final snap = await (ref as DocumentReference).get();
+          final d = snap.data() as Map<String, dynamic>?;
+          return d?["ExerciseName"] ?? "No name";
+        }));
+
+        // Buscar nome dos músculos
+        final musclesData = await Future.wait(musclesRefs.map((ref) async {
+          if (ref == null) return null;
+          final snap = await (ref as DocumentReference).get();
+          final d = snap.data() as Map<String, dynamic>?;
+          return d?["MuscleName"] ?? "No name";
+        }));
+
+        return {
+          "id": doc.id,
+          "Name": data["Name"],
+          "Description": data["Description"],
+          "Exercises": exercisesData, // nomes!
+          "Muscles": musclesData,     // nomes!
+        };
+      }),
+    );
+  }
+
+  //create Training Plan
+  Future<void> createTrainingPlan({
+    required String name,
+    required String description,
+    required List<String> Exercises, // Lista de IDs de exercícios
+    required List<String> Muscles,   // Lista de IDs de músculos
+  }) async {
+    try {
+      await _db.collection("TrainingPlan").add({
+        "Name": name,
+        "Description": description,
+
+        // Campo chama Exercises (com S), mas busca na coleção Exercise (sem S)
+        "Exercises": Exercises
+            .map((id) => _db.collection("Exercise").doc(id))
+            .toList(),
+
+        // Campo chama Muscles (com S), mas busca na coleção Muscle (sem S)
+        "Muscles": Muscles
+            .map((id) => _db.collection("Muscle").doc(id))
+            .toList(),
+      });
+
+      print("Plano de treino criado com sucesso!");
+    } catch (e) {
+      print("Erro ao criar plano de treino: $e");
+    }
+  }
+
+  Future<void> deleteTrainingPlan(String id) async {
+    await _db.collection("TrainingPlan").doc(id).delete();
+  }
+
+  // Update Training Plan
+  Future<void> updateTrainingPlan(
+    String planId,
+    String name,
+    String description,
+    List<String> exercises, // Lista de IDs de exercícios
+    List<String> muscles,   // Lista de IDs de músculos
+  ) async {
+    try {
+      await _db.collection("TrainingPlan").doc(planId).update({
+        "Name": name,
+        "Description": description,
+        "exercises": exercises.map((id) => _db.collection("Exercise").doc(id)).toList(),
+        "muscles": muscles.map((id) => _db.collection("Muscle").doc(id)).toList(),
+      });
+
+      print("Plano de treino atualizado com sucesso!");
+    } catch (e) {
+      print("Erro ao atualizar plano de treino: $e");
+    }
+  }
+
+
+
+
+Future<List<NewsArticle>> fetchHealthNews() async {
+  final url = Uri.parse('https://saurav.tech/NewsAPI/top-headlines/category/health/in.json');
+
+  final response = await http.get(url);
+
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    final articles = data['articles'] as List;
+
+    return articles.map((json) => NewsArticle.fromJson(json)).toList();
+  } else {
+    throw Exception('Falha ao carregar notícias');
+  }
+}
+
 
 }

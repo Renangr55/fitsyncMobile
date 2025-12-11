@@ -38,7 +38,7 @@ class _ExercisePageState extends State<ExercisePage> {
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(
               child: Text(
-                "Nenhum exercício encontrado",
+                "No exercise",
                 style: TextStyle(fontSize: 16, color: Colors.white70),
               ),
             );
@@ -67,9 +67,7 @@ class _ExercisePageState extends State<ExercisePage> {
     );
   }
 
-  // ------------------------------------
-  // CARD COM EDITAR E DELETAR
-  // ------------------------------------
+  //update and delete card
   Widget _exerciseCard(Map<String, dynamic> ex) {
     final id = ex["id"];
     final muscleName = ex["TypeMuscle"]?["MuscleName"] ?? "Sem músculo";
@@ -136,9 +134,7 @@ class _ExercisePageState extends State<ExercisePage> {
     );
   }
 
-  // ------------------------------------
-  // MODAL DE CRIAR / EDITAR
-  // ------------------------------------
+  // create and update exercise
   void _openExerciseModal(BuildContext context, {Map<String, dynamic>? exercise}) async {
     final muscles = await _service.getMuscle();
     String? selectedMuscleId;
@@ -213,6 +209,16 @@ class _ExercisePageState extends State<ExercisePage> {
                   },
                   child: const Text("Cancel", style: TextStyle(color: Colors.redAccent)),
                 ),
+                
+                if (exercise != null) 
+                  TextButton(
+                    onPressed: () async {
+                      await _service.deleteExercise(exercise["id"]);
+                      Navigator.pop(context);
+                      setState(() {});
+                    },
+                    child: const Text("Delete", style: TextStyle(color: Colors.redAccent)),
+                  ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
@@ -252,7 +258,7 @@ class _ExercisePageState extends State<ExercisePage> {
                     Navigator.pop(context);
                     setState(() {});
                   },
-                  child: Text(exercise == null ? "Salvar" : "Atualizar"),
+                  child: Text(exercise == null ? "Save" : "Update"),
                 )
               ],
             );
@@ -262,7 +268,6 @@ class _ExercisePageState extends State<ExercisePage> {
     );
   }
 
-  // Campo estilizado
   Widget _styledInput({required TextEditingController controller, required String label, required IconData icon}) {
     return TextField(
       controller: controller,

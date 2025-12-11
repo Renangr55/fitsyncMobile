@@ -1,6 +1,38 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import '../services/exercicio_service.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+
+// Modelo de Notícia
+class NewsArticle {
+  final String title;
+  final String description;
+  final String url;
+  final String imageUrl;
+  final String publishedAt;
+  final String sourceName;
+
+  NewsArticle({
+    required this.title,
+    required this.description,
+    required this.url,
+    required this.imageUrl,
+    required this.publishedAt,
+    required this.sourceName,
+  });
+
+  factory NewsArticle.fromJson(Map<String, dynamic> json) {
+    return NewsArticle(
+      title: json['title'] ?? 'Sem título',
+      description: json['description'] ?? '',
+      url: json['url'] ?? '',
+      imageUrl: json['urlToImage'] ?? '',
+      publishedAt: json['publishedAt'] ?? '',
+      sourceName: json['source']?['name'] ?? '',
+    );
+  }
+}
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -10,30 +42,27 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage> {
-  final ExercicioService _exercicioService = ExercicioService();
-  List<dynamic> exercicios = [];
   bool loading = true;
+
+  late Future<List<NewsArticle>> _futureNews;
 
   @override
   void initState() {
     super.initState();
-    carregarExercicios();
+    _futureNews = fetchHealthNews();
   }
 
-  Future<void> carregarExercicios() async {
-    try {
-      final lista = await _exercicioService.getMuscle();
-      if (!mounted) return;
 
-      setState(() {
-        exercicios = lista;
-        loading = false;
-      });
-    } catch (e) {
-      print("Erro: $e");
-      setState(() {
-        loading = false;
-      });
+  Future<List<NewsArticle>> fetchHealthNews() async {
+    final url = Uri.parse('https://saurav.tech/NewsAPI/top-headlines/category/health/in.json');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final articles = data['articles'] as List;
+      return articles.map((json) => NewsArticle.fromJson(json)).toList();
+    } else {
+      throw Exception('Error to load news');
     }
   }
 
@@ -49,73 +78,95 @@ class _HomepageState extends State<Homepage> {
           ),
         ),
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 50),
-            const Text(
-              "Welcome to FitApp",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
+
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 50),
+
+              const Text(
+                "Welcome to FitApp",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 36,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Center(
-              child: SizedBox(
-                height: MediaQuery.of(context).size.height * 0.25,
-                child: CarouselSlider(
-                  items: [
-                    cardBanner("assets/image/firstBanner.jpg"),
-                    cardBanner("assets/image/secondBanner.jpg"),
-                  ],
-                  options: CarouselOptions(
-                    autoPlay: true,
-                    autoPlayInterval: const Duration(seconds: 3),
-                    viewportFraction: 0.85,
-                    enlargeCenterPage: true,
-                    enableInfiniteScroll: true,
+
+              const SizedBox(height: 20),
+
+              Center(
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.25,
+                  child: CarouselSlider(
+                    items: [
+                      cardBanner("assets/image/firstBanner.jpg"),
+                      cardBanner("assets/image/secondBanner.jpg"),
+                    ],
+                    options: CarouselOptions(
+                      autoPlay: true,
+                      autoPlayInterval: const Duration(seconds: 3),
+                      viewportFraction: 0.85,
+                      enlargeCenterPage: true,
+                      enableInfiniteScroll: true,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              "Exercícios",
-              style: TextStyle(
-                color: Colors.greenAccent,
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
+
+              const SizedBox(height: 20),
+
+              
+              const SizedBox(height: 10),
+
+              
+
+              const SizedBox(height: 20),
+
+              const Text(
+                "Health News",
+                style: TextStyle(
+                  color: Colors.greenAccent,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: loading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.greenAccent,
-                      ),
-                    )
-                  : exercicios.isEmpty
-                      ? const Center(
-                          child: Text(
-                            "Nenhum exercício disponível",
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: exercicios.length,
-                          itemBuilder: (context, index) {
-                            return cardExercicio(exercicios[index]);
-                          },
-                        ),
-            ),
-          ],
+
+              const SizedBox(height: 10),
+
+              FutureBuilder<List<NewsArticle>>(
+                future: _futureNews,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.greenAccent),
+                    );
+                  } else if (snapshot.hasError) {
+                    return Text('Erro: ${snapshot.error}', style: const TextStyle(color: Colors.redAccent));
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Text('Nenhuma notícia encontrada.', style: TextStyle(color: Colors.white70));
+                  }
+
+                  final news = snapshot.data!;
+
+                  return Column(
+                    children: news.map((article) => cardNews(article)).toList(),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );
   }
+
+  // ---------------------------------------------------
+  // Widgets
+  // ---------------------------------------------------
 
   Widget cardBanner(String img) {
     return Container(
@@ -179,5 +230,68 @@ class _HomepageState extends State<Homepage> {
         trailing: const Icon(Icons.fitness_center, color: Colors.greenAccent),
       ),
     );
+  }
+
+  Widget cardNews(NewsArticle article) {
+    return Card(
+      color: const Color.fromARGB(50, 255, 255, 255),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      elevation: 6,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(16),
+        title: Text(
+          article.title,
+          style: const TextStyle(
+              color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 8),
+            Text(
+              article.description.isNotEmpty
+                  ? article.description
+                  : "Sem descrição",
+              style: const TextStyle(color: Colors.white70),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 5),
+            Text(
+              'news source : ${article.sourceName}',
+              style: const TextStyle(color: Colors.greenAccent, fontSize: 14),
+            ),
+          ],
+        ),
+        trailing: article.imageUrl.isNotEmpty
+            ? Image.network(
+                article.imageUrl,
+                height: 40,
+                width: 40,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stack) =>
+                    const Icon(Icons.broken_image, color: Colors.greenAccent),
+              )
+            : const Icon(Icons.article, color: Colors.greenAccent),
+        onTap: () {
+          if (article.url.isNotEmpty) {
+            _launchURL(article.url);
+          }
+        },
+      ),
+    );
+  }
+
+  Future<void> _launchURL(String urlString) async {
+    final Uri url = Uri.parse(urlString);
+
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível abrir o link')),
+      );
+    }
   }
 }

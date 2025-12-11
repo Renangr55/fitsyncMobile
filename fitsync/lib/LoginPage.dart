@@ -43,6 +43,7 @@ class _LoginpageState extends State<LoginPage> {
               Container(
                 height: 300,
                 width: 400,
+                // fitSync
                 child: Image.asset('assets/image/logo.png'),
               ),
               Container(

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'Homepage.dart';
 import 'ExercisePage.dart';
-import 'ProfilePage.dart';
+import 'TrainplanPage.dart';
 import 'MusclePage.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -17,7 +17,7 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> pages = [
     Homepage(),
     ExercisePage(),
-    ProfilePage(),
+    TrainplanPage(),
     Musclepage()
   ];
 
@@ -28,12 +28,13 @@ class _MainNavigationState extends State<MainNavigation> {
 
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor:  Color.fromARGB(255, 32, 32, 32),
-        selectedItemColor: Colors.greenAccent,
+        selectedItemColor: const Color.fromARGB(255, 0, 0, 0),
         unselectedItemColor: Colors.grey,
         currentIndex: _currentIndex,
         onTap: (index) {
           setState(() => _currentIndex = index);
         },
+        //Navigation bar
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -41,11 +42,11 @@ class _MainNavigationState extends State<MainNavigation> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.fitness_center),
-            label: "Treinos",
+            label: "Trains",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: "Perfil",
+            icon: Icon(Icons.plagiarism),
+            label: "Train Plan",
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.sports_gymnastics),
